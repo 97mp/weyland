@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WEYLAND - 终极游戏视觉辅助平台</title>
+    <title>WEYLAND - 自动发卡平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -19,7 +19,8 @@
                             delta: '#00ff9d',
                             val: '#ff4655',
                             dark: '#0f172a',
-                            warning: '#ef4444'
+                            warning: '#ef4444',
+                            wx: '#07c160' // 微信绿
                         }
                     },
                     fontFamily: {
@@ -29,7 +30,6 @@
                     animation: {
                         'fade-in': 'fadeIn 0.5s ease-out forwards',
                         'pulse-slow': 'pulse 3s infinite',
-                        'spin-slow': 'spin 3s linear infinite',
                     },
                     keyframes: {
                         fadeIn: {
@@ -143,33 +143,61 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* 支付二维码样式 */
+        /* 微信支付二维码扫描线 */
         .qr-container {
             position: relative;
-            padding: 10px;
+            padding: 4px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 0 40px rgba(255,255,255,0.1);
+            border-radius: 8px;
+            box-shadow: 0 0 40px rgba(7, 193, 96, 0.2);
+            border: 2px solid #07c160;
+            overflow: hidden;
         }
         .scan-line {
             position: absolute;
             width: 100%;
             height: 2px;
-            background: #00ff9d;
+            background: #07c160;
             top: 0;
             left: 0;
-            box-shadow: 0 0 10px #00ff9d;
+            box-shadow: 0 0 10px #07c160;
             animation: scan 2s linear infinite;
             opacity: 0.8;
+            pointer-events: none;
+            z-index: 10;
         }
         @keyframes scan {
             0% { top: 0; }
             50% { top: 100%; }
             100% { top: 0; }
         }
+
+        /* 加载动画圆圈 */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #07c160;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 失效遮罩 */
+        .expired-mask {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            backdrop-filter: blur(2px);
+        }
+
     </style>
 </head>
-<body class="font-body antialiased selection:bg-white selection:text-black">
+<body class="font-body antialiased selection:bg-brand-wx selection:text-white">
 
     <nav class="fixed w-full z-50 top-0 p-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center glass-card rounded-full px-6 md:px-8 py-3 bg-black/80">
@@ -300,7 +328,7 @@
                                 <h3 class="text-gray-400">三角洲 - 天卡</h3>
                                 <div class="text-4xl font-bold text-white my-4">¥ 30</div>
                             </div>
-                            <button onclick="startPayment('pay_30.jpg', '三角洲行动 - 天卡 (24h)')" class="w-full py-3 border border-brand-delta text-brand-delta rounded hover:bg-brand-delta hover:text-black transition flex justify-center items-center gap-2">
+                            <button onclick="initiatePurchase('pay_30.jpg', '三角洲行动-天卡 (24H)', '30.00')" class="w-full py-3 border border-brand-delta text-brand-delta rounded hover:bg-brand-delta hover:text-black transition flex justify-center items-center gap-2">
                                 <i class="fa-solid fa-cart-shopping"></i> 购买天卡
                             </button>
                         </div>
@@ -310,7 +338,7 @@
                                 <h3 class="text-white text-xl font-bold">三角洲 - 周卡</h3>
                                 <div class="text-4xl font-bold text-white my-4">¥ 150</div>
                             </div>
-                            <button onclick="startPayment('pay_150.jpg', '三角洲行动 - 周卡 (7 Days)')" class="w-full py-3 bg-brand-delta text-black font-bold rounded hover:bg-white transition flex justify-center items-center gap-2">
+                            <button onclick="initiatePurchase('pay_150.jpg', '三角洲行动-周卡 (7 Days)', '150.00')" class="w-full py-3 bg-brand-delta text-black font-bold rounded hover:bg-white transition flex justify-center items-center gap-2">
                                 <i class="fa-solid fa-bolt"></i> 立即购买
                             </button>
                         </div>
@@ -319,7 +347,7 @@
                                 <h3 class="text-gray-400">三角洲 - 月卡</h3>
                                 <div class="text-4xl font-bold text-white my-4">¥ 450</div>
                             </div>
-                            <button onclick="startPayment('pay_450.jpg', '三角洲行动 - 月卡 (30 Days)')" class="w-full py-3 border border-brand-delta text-brand-delta rounded hover:bg-brand-delta hover:text-black transition flex justify-center items-center gap-2">
+                            <button onclick="initiatePurchase('pay_450.jpg', '三角洲行动-月卡 (30 Days)', '450.00')" class="w-full py-3 border border-brand-delta text-brand-delta rounded hover:bg-brand-delta hover:text-black transition flex justify-center items-center gap-2">
                                 <i class="fa-solid fa-crown"></i> 购买月卡
                             </button>
                         </div>
@@ -392,7 +420,7 @@
                                 <h3 class="text-white text-xl font-bold">无畏契约 - 天卡</h3>
                                 <div class="text-4xl font-bold text-white my-4">¥ 25</div>
                             </div>
-                            <button onclick="startPayment('pay_25.jpg', '无畏契约 - 天卡 (24h)')" class="w-full py-3 bg-brand-val text-white font-bold rounded hover:bg-white hover:text-black transition flex justify-center items-center gap-2">
+                            <button onclick="initiatePurchase('pay_25.jpg', '无畏契约-天卡 (24H)', '25.00')" class="w-full py-3 bg-brand-val text-white font-bold rounded hover:bg-white hover:text-black transition flex justify-center items-center gap-2">
                                 <i class="fa-solid fa-bolt"></i> 立即购买
                             </button>
                         </div>
@@ -492,35 +520,73 @@
         <button class="absolute top-4 right-4 text-white text-4xl hover:text-brand-warning transition">&times;</button>
     </div>
 
-    <div id="payment-modal" class="fixed inset-0 z-[200] bg-[#050505] hidden flex-col items-center justify-center p-4 animate-fade-in">
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
-        <button onclick="closePayment()" class="absolute top-6 right-6 text-gray-400 hover:text-white text-xl flex items-center gap-2">
-            <span class="text-sm uppercase tracking-widest">Cancel</span> <i class="fa-solid fa-xmark"></i>
+    <div id="payment-modal" class="fixed inset-0 z-[200] bg-[#111] hidden items-center justify-center p-4 animate-fade-in">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-wx to-transparent"></div>
+        <button onclick="closePayment()" class="absolute top-6 right-6 text-gray-500 hover:text-white text-xl flex items-center gap-2">
+            <span class="text-sm uppercase tracking-widest">取消订单</span> <i class="fa-solid fa-xmark"></i>
         </button>
 
-        <div class="text-center mb-8">
-            <h2 class="text-2xl md:text-4xl font-heading font-bold text-white mb-2">安全收银台</h2>
-            <p id="payment-title" class="text-brand-light font-mono text-lg">正在创建订单...</p>
+        <div id="step-init" class="w-full max-w-md flex flex-col items-center justify-center text-center hidden">
+            <div class="loader mb-6"></div>
+            <h3 class="text-xl text-white font-bold mb-2">正在创建安全订单...</h3>
+            <p id="init-text" class="text-gray-500 text-sm font-mono">Connecting to Gateway...</p>
         </div>
 
-        <div class="bg-white p-1 rounded-2xl shadow-[0_0_60px_rgba(6,182,212,0.15)]">
-            <div class="qr-container">
-                <img id="payment-qr-img" src="" alt="Payment QR Code" class="w-64 h-64 object-contain">
-                <div class="scan-line"></div>
+        <div id="step-pay" class="w-full max-w-md flex flex-col items-center hidden">
+            <div class="text-center mb-4">
+                <h2 class="text-2xl font-bold text-white mb-1"><i class="fa-brands fa-weixin text-brand-wx mr-2"></i>微信扫码支付</h2>
+                <div class="flex items-center gap-2 justify-center text-xs text-gray-500 font-mono mt-2">
+                    <span>单号: <span id="order-id">WL-000000</span></span>
+                    <span class="text-gray-600">|</span>
+                    <span>有效期: <span id="timer" class="text-brand-wx font-bold">05:00</span></span>
+                </div>
+            </div>
+
+            <div class="w-full bg-[#1e1e1e] p-4 rounded-lg mb-4 border-l-4 border-brand-wx">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-gray-400 text-sm">商品名称</span>
+                    <span id="pay-item-name" class="text-white font-bold text-sm text-right">商品名</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">应付金额</span>
+                    <span class="text-brand-wx font-bold text-2xl">¥ <span id="pay-price">0.00</span></span>
+                </div>
+            </div>
+
+            <div class="bg-white p-1 rounded-lg shadow-[0_0_50px_rgba(7,193,96,0.15)] mb-4 relative group w-64 h-64 flex items-center justify-center">
+                <div id="qr-active-layer" class="qr-container w-full h-full">
+                    <img id="payment-qr-img" src="" alt="WeChat Pay QR" class="w-full h-full object-contain">
+                    <div class="scan-line"></div>
+                </div>
+                
+                <div id="qr-expired-layer" class="hidden expired-mask flex-col text-center">
+                    <i class="fa-solid fa-circle-xmark text-red-500 text-4xl mb-2"></i>
+                    <p class="text-gray-800 font-bold text-sm">二维码已失效</p>
+                    <p class="text-gray-500 text-xs">请刷新页面重新下单</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center gap-2 w-full">
+                 <div id="status-container" class="flex items-center gap-2 text-brand-wx text-sm animate-pulse">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <span id="payment-status-text">等待用户扫码...</span>
+                </div>
+                <p id="footer-tip" class="text-gray-500 text-xs">支付成功后系统将自动跳转，请勿关闭页面</p>
             </div>
         </div>
 
-        <div class="mt-8 flex flex-col items-center gap-4">
-            <div class="flex items-center gap-3 text-gray-300 bg-white/5 px-6 py-3 rounded-full border border-white/10">
-                <i class="fa-solid fa-circle-notch fa-spin text-brand-light"></i>
-                <span class="text-sm font-mono">支付成功后 <span class="text-white font-bold">自动跳转</span> 发卡页...</span>
+        <div id="step-failed" class="hidden w-full max-w-md flex-col items-center animate-fade-in">
+            <div class="w-20 h-20 bg-red-500/10 border border-red-500 rounded-full flex items-center justify-center text-red-500 text-4xl mb-6">
+                <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            
-            <div class="flex gap-4 mt-2 opacity-50 grayscale hover:grayscale-0 transition duration-500">
-                <i class="fa-brands fa-weixin text-3xl text-green-500"></i>
-                <i class="fa-brands fa-alipay text-3xl text-blue-500"></i>
-            </div>
+            <h2 class="text-3xl font-bold text-white mb-2">支付超时</h2>
+            <p class="text-gray-400 text-sm mb-8 text-center">订单因长时间未支付已自动关闭。<br>如需购买，请重新发起订单。</p>
+
+            <button onclick="closePayment()" class="w-full py-3 bg-white hover:bg-gray-200 text-black font-bold rounded transition">
+                返回首页
+            </button>
         </div>
+
     </div>
 
     <script>
@@ -574,11 +640,9 @@
             }
         }
 
-        // 图片放大模态框逻辑
         function openModal(imgSrc) {
             const modal = document.getElementById('image-modal');
-            const modalImg = document.getElementById('modal-image');
-            modalImg.src = imgSrc;
+            document.getElementById('modal-image').src = imgSrc;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.classList.add('modal-open');
@@ -591,28 +655,152 @@
             document.body.classList.remove('modal-open');
         }
 
-        // 支付跳转逻辑
-        function startPayment(qrSrc, title) {
-            const payModal = document.getElementById('payment-modal');
-            const payImg = document.getElementById('payment-qr-img');
-            const payTitle = document.getElementById('payment-title');
+        // --- 核心：仿真全自动发卡逻辑 ---
+        
+        let purchaseTimeout;
+        let countdownInterval;
+        let timeLeft = 300; // 5分钟 = 300秒
 
-            payImg.src = qrSrc;
-            payTitle.innerText = title;
+        function generateRandomString(length) {
+            const chars = '0123456789'; // 纯数字订单号更像发卡网
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function initiatePurchase(qrSrc, itemName, price) {
+            const modal = document.getElementById('payment-modal');
+            const stepInit = document.getElementById('step-init');
+            const stepPay = document.getElementById('step-pay');
+            const stepFailed = document.getElementById('step-failed');
+            const initText = document.getElementById('init-text');
             
-            payModal.classList.remove('hidden');
-            payModal.classList.add('flex');
+            // 重置倒计时状态
+            resetTimer();
+
+            // 1. 初始化界面状态
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
             document.body.classList.add('modal-open');
 
-            // 模拟支付检测效果 (实际项目中这里接Websocket或轮询)
-            console.log(`Initialized payment for: ${title}`);
+            stepInit.classList.remove('hidden');
+            stepInit.classList.add('flex');
+            stepPay.classList.add('hidden');
+            stepPay.classList.remove('flex');
+            stepFailed.classList.add('hidden');
+            stepFailed.classList.remove('flex');
+
+            // 恢复二维码正常显示（移除遮罩）
+            document.getElementById('qr-active-layer').classList.remove('blur-sm');
+            document.getElementById('qr-expired-layer').classList.add('hidden');
+            document.getElementById('qr-expired-layer').classList.remove('flex');
+            document.getElementById('status-container').classList.remove('hidden');
+            document.getElementById('footer-tip').classList.remove('hidden');
+
+            // 填充数据
+            document.getElementById('payment-qr-img').src = qrSrc;
+            document.getElementById('pay-item-name').innerText = itemName;
+            document.getElementById('pay-price').innerText = price;
+            
+            // 生成纯数字随机订单号 (每次点击都不同)
+            const randomOrderId = '2024' + generateRandomString(12);
+            document.getElementById('order-id').innerText = randomOrderId;
+
+            // 2. 模拟：检查库存 -> 呼起支付 (2秒)
+            initText.innerText = "正在连接云端库存...";
+            setTimeout(() => { initText.innerText = "锁定卡密库存成功..."; }, 800);
+            setTimeout(() => { initText.innerText = "正在创建微信收款订单..."; }, 1500);
+
+            purchaseTimeout = setTimeout(() => {
+                stepInit.classList.add('hidden');
+                stepInit.classList.remove('flex');
+                
+                stepPay.classList.remove('hidden');
+                stepPay.classList.add('flex');
+                
+                // 开始倒计时
+                startCountdown();
+                
+            }, 2500);
+        }
+
+        function startCountdown() {
+            timeLeft = 300; // 300秒
+            updateTimerDisplay(timeLeft);
+            
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay(timeLeft);
+
+                if (timeLeft <= 0) {
+                    handleExpiration();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            const timerEl = document.getElementById('timer');
+            timerEl.innerText = display;
+            
+            if (seconds < 60) {
+                timerEl.classList.add('text-red-500');
+                timerEl.classList.remove('text-brand-wx');
+            } else {
+                timerEl.classList.remove('text-red-500');
+                timerEl.classList.add('text-brand-wx');
+            }
+        }
+
+        function handleExpiration() {
+            clearInterval(countdownInterval);
+            
+            // 方法1: 直接切换到失败页面 (Option A)
+            /*
+            const stepPay = document.getElementById('step-pay');
+            const stepFailed = document.getElementById('step-failed');
+            stepPay.classList.add('hidden');
+            stepPay.classList.remove('flex');
+            stepFailed.classList.remove('hidden');
+            stepFailed.classList.add('flex');
+            */
+
+            // 方法2: 在当前页面显示失效遮罩 (Option B - 更像微信支付)
+            document.getElementById('qr-active-layer').classList.add('blur-sm');
+            document.getElementById('qr-expired-layer').classList.remove('hidden');
+            document.getElementById('qr-expired-layer').classList.add('flex');
+            
+            document.getElementById('timer').innerText = "00:00";
+            document.getElementById('payment-status-text').innerText = "订单已超时关闭";
+            document.getElementById('status-container').classList.remove('text-brand-wx');
+            document.getElementById('status-container').classList.add('text-red-500');
+            document.getElementById('status-container').classList.remove('animate-pulse');
+        }
+
+        function resetTimer() {
+            clearInterval(countdownInterval);
+            const timerEl = document.getElementById('timer');
+            timerEl.classList.remove('text-red-500');
+            timerEl.classList.add('text-brand-wx');
+            document.getElementById('status-container').classList.add('text-brand-wx');
+            document.getElementById('status-container').classList.remove('text-red-500');
+            document.getElementById('status-container').classList.add('animate-pulse');
+            document.getElementById('payment-status-text').innerText = "等待用户扫码...";
         }
 
         function closePayment() {
-            const payModal = document.getElementById('payment-modal');
-            payModal.classList.add('hidden');
-            payModal.classList.remove('flex');
+            const modal = document.getElementById('payment-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             document.body.classList.remove('modal-open');
+            
+            clearTimeout(purchaseTimeout);
+            clearInterval(countdownInterval);
         }
     </script>
 </body>
